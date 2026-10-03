@@ -1,1 +1,88 @@
-
+{
+  "version": 1,
+  "updated_at": "2026-10-02",
+  "categories": [
+    {
+      "id": "motivation",
+      "title": "Motivation",
+      "subtitle": "Commencer sa journée au sommet",
+      "order": 1
+    },
+    {
+      "id": "guide-interieur",
+      "title": "Guide intérieur",
+      "subtitle": "Se connecter à sa sagesse intérieure",
+      "order": 2
+    },
+    {
+      "id": "relaxation",
+      "title": "Relaxation profonde",
+      "subtitle": "Relâcher le corps et l'esprit",
+      "order": 3
+    },
+    {
+      "id": "chakras",
+      "title": "Chakras",
+      "subtitle": "Aligner ses sept centres d'énergie",
+      "order": 4
+    },
+    {
+      "id": "attraction",
+      "title": "Loi d'attraction",
+      "subtitle": "J'ai, je suis, j'ai reçu",
+      "order": 5
+    }
+  ],
+  "meditations": [
+    {
+      "id": "attraction-01",
+      "title": "J'ai, je suis, j'ai reçu",
+      "category": "attraction",
+      "description": "Place-toi dans l'état de la personne qui a déjà reçu : gratitude, visualisation vécue avec tous les sens, affirmations en crescendo et lâcher-prise.",
+      "duration_s": 900,
+      "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/attraction-01.m4a",
+      "image_url": "https://kintangellzkd.github.io/ma-voix-interieure/attraction.jpg",
+      "headphones": true
+    },
+    {
+      "id": "chakras-01",
+      "title": "Alignement des sept chakras",
+      "category": "chakras",
+      "description": "Éveille un à un tes sept centres d'énergie, de la racine à la couronne, chacun avec sa couleur, son affirmation et sa fréquence.",
+      "duration_s": 900,
+      "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/chakras-01.m4a",
+      "image_url": "https://kintangellzkd.github.io/ma-voix-interieure/chakras.jpg",
+      "headphones": true
+    },
+    {
+      "id": "guide-interieur-01",
+      "title": "Rencontre avec ton guide intérieur",
+      "category": "guide-interieur",
+      "description": "Un voyage intérieur guidé pour apaiser le mental, rejoindre ton lieu de paix et recevoir les réponses de ta sagesse intérieure.",
+      "duration_s": 900,
+      "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/guide-interieur-01.m4a",
+      "image_url": "https://kintangellzkd.github.io/ma-voix-interieure/guide-interieur.jpg",
+      "headphones": true
+    },
+    {
+      "id": "motivation-01",
+      "title": "Éveille ta meilleure version",
+      "category": "motivation",
+      "description": "Quinze minutes pour allumer ta flamme intérieure, entrer dans la peau de la meilleure version de toi-même et commencer ta journée avec énergie et confiance.",
+      "duration_s": 900,
+      "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/motivation-01.m4a",
+      "image_url": "https://kintangellzkd.github.io/ma-voix-interieure/motivation.jpg",
+      "headphones": true
+    },
+    {
+      "id": "relaxation-01",
+      "title": "Détente profonde",
+      "category": "relaxation",
+      "description": "Relâche une à une les tensions du corps, glisse dans un calme profond et reviens doucement, avec une sensation de repos intense.",
+      "duration_s": 900,
+      "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/relaxation-01.m4a",
+      "image_url": "https://kintangellzkd.github.io/ma-voix-interieure/relaxation.jpg",
+      "headphones": true
+    }
+  ]
+}
