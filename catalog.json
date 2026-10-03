@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-10-02",
+  "updated_at": "2026-10-03",
   "categories": [
     {
       "id": "motivation",
@@ -40,8 +40,8 @@
       "category": "attraction",
       "description": "Place-toi dans l'état de la personne qui a déjà reçu : gratitude, visualisation vécue avec tous les sens, affirmations en crescendo et lâcher-prise.",
       "duration_s": 900,
-      "audio_url": "attraction-01.m4a",
-      "image_url": "attraction.jpg",
+      "audio_url": "attraction-01.m4a?v=4",
+      "image_url": "attraction.jpg?v=4",
       "headphones": true
     },
     {
@@ -50,8 +50,8 @@
       "category": "chakras",
       "description": "Éveille un à un tes sept centres d'énergie, de la racine à la couronne, chacun avec sa couleur, son affirmation et sa fréquence.",
       "duration_s": 900,
-      "audio_url": "chakras-01.m4a",
-      "image_url": "chakras.jpg",
+      "audio_url": "chakras-01.m4a?v=4",
+      "image_url": "chakras.jpg?v=4",
       "headphones": true
     },
     {
@@ -60,8 +60,8 @@
       "category": "guide-interieur",
       "description": "Un voyage intérieur guidé pour apaiser le mental, rejoindre ton lieu de paix et recevoir les réponses de ta sagesse intérieure.",
       "duration_s": 900,
-      "audio_url": "guide-interieur-01.m4a",
-      "image_url": "guide-interieur.jpg",
+      "audio_url": "guide-interieur-01.m4a?v=4",
+      "image_url": "guide-interieur.jpg?v=4",
       "headphones": true
     },
     {
@@ -70,8 +70,8 @@
       "category": "motivation",
       "description": "Quinze minutes pour allumer ta flamme intérieure, entrer dans la peau de la meilleure version de toi-même et commencer ta journée avec énergie et confiance.",
       "duration_s": 900,
-      "audio_url": "motivation-01.m4a",
-      "image_url": "motivation.jpg",
+      "audio_url": "motivation-01.m4a?v=4",
+      "image_url": "motivation.jpg?v=4",
       "headphones": true
     },
     {
@@ -80,8 +80,8 @@
       "category": "relaxation",
       "description": "Relâche une à une les tensions du corps, glisse dans un calme profond et reviens doucement, avec une sensation de repos intense.",
       "duration_s": 900,
-      "audio_url": "relaxation-01.m4a",
-      "image_url": "relaxation.jpg",
+      "audio_url": "relaxation-01.m4a?v=4",
+      "image_url": "relaxation.jpg?v=4",
       "headphones": true
     }
   ]
