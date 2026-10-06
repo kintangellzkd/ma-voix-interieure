@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-10-03",
+  "updated_at": "2026-10-06",
   "categories": [
     {
       "id": "motivation",
@@ -31,6 +31,12 @@
       "title": "Loi d'attraction",
       "subtitle": "J'ai, je suis, j'ai reçu",
       "order": 5
+    },
+    {
+      "id": "liberation",
+      "title": "Libération",
+      "subtitle": "Refermer ce qui pèse encore",
+      "order": 6
     }
   ],
   "meditations": [
@@ -40,8 +46,8 @@
       "category": "attraction",
       "description": "Place-toi dans l'état de la personne qui a déjà reçu : gratitude, visualisation vécue avec tous les sens, affirmations en crescendo et lâcher-prise.",
       "duration_s": 900,
-      "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/attraction-01.m4a?v=4",
-      "image_url": "https://kintangellzkd.github.io/ma-voix-interieure/attraction.jpg?v=4",
+      "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/attraction-01.m4a?v=6",
+      "image_url": "https://kintangellzkd.github.io/ma-voix-interieure/attraction.jpg?v=6",
       "headphones": true
     },
     {
@@ -50,8 +56,8 @@
       "category": "chakras",
       "description": "Éveille un à un tes sept centres d'énergie, de la racine à la couronne, chacun avec sa couleur, son affirmation et sa fréquence.",
       "duration_s": 900,
-      "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/chakras-01.m4a?v=4",
-      "image_url": "https://kintangellzkd.github.io/ma-voix-interieure/chakras.jpg?v=4",
+      "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/chakras-01.m4a?v=6",
+      "image_url": "https://kintangellzkd.github.io/ma-voix-interieure/chakras.jpg?v=6",
       "headphones": true
     },
     {
@@ -60,8 +66,18 @@
       "category": "guide-interieur",
       "description": "Un voyage intérieur guidé pour apaiser le mental, rejoindre ton lieu de paix et recevoir les réponses de ta sagesse intérieure.",
       "duration_s": 900,
-      "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/guide-interieur-01.m4a?v=4",
-      "image_url": "https://kintangellzkd.github.io/ma-voix-interieure/guide-interieur.jpg?v=4",
+      "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/guide-interieur-01.m4a?v=6",
+      "image_url": "https://kintangellzkd.github.io/ma-voix-interieure/guide-interieur.jpg?v=6",
+      "headphones": true
+    },
+    {
+      "id": "liberation-passe-01",
+      "title": "Libération du passé",
+      "category": "liberation",
+      "description": "Une porte apparaît dans un lieu que tu connais. Derrière elle, tout ce qu'on t'a fait subir. Tu entres, tu regardes, tu traverses — puis tu refermes, tu verrouilles, et tu lances la clé au loin.",
+      "duration_s": 900,
+      "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/liberation-passe-01.m4a?v=6",
+      "image_url": "https://kintangellzkd.github.io/ma-voix-interieure/liberation.jpg?v=6",
       "headphones": true
     },
     {
@@ -70,8 +86,8 @@
       "category": "motivation",
       "description": "Quinze minutes pour allumer ta flamme intérieure, entrer dans la peau de la meilleure version de toi-même et commencer ta journée avec énergie et confiance.",
       "duration_s": 900,
-      "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/motivation-01.m4a?v=4",
-      "image_url": "https://kintangellzkd.github.io/ma-voix-interieure/motivation.jpg?v=4",
+      "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/motivation-01.m4a?v=6",
+      "image_url": "https://kintangellzkd.github.io/ma-voix-interieure/motivation.jpg?v=6",
       "headphones": true
     },
     {
@@ -80,8 +96,8 @@
       "category": "relaxation",
       "description": "Relâche une à une les tensions du corps, glisse dans un calme profond et reviens doucement, avec une sensation de repos intense.",
       "duration_s": 900,
-      "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/relaxation-01.m4a?v=4",
-      "image_url": "https://kintangellzkd.github.io/ma-voix-interieure/relaxation.jpg?v=4",
+      "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/relaxation-01.m4a?v=6",
+      "image_url": "https://kintangellzkd.github.io/ma-voix-interieure/relaxation.jpg?v=6",
       "headphones": true
     }
   ]
