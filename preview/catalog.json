@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-10-06",
+  "updated_at": "2026-10-14",
   "categories": [
     {
       "id": "motivation",
@@ -98,6 +98,118 @@
       "duration_s": 900,
       "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/relaxation-01.m4a?v=6",
       "image_url": "https://kintangellzkd.github.io/ma-voix-interieure/relaxation.jpg?v=6",
+      "headphones": true
+    }
+  ],
+  "frequences": [
+    {
+      "id": "hz-174",
+      "hz": 174.0,
+      "title": "L'ancrage",
+      "subtitle": "Se sentir en sécurité, poser le corps",
+      "description": "La plus grave de l'échelle. On l'écoute pour relâcher la tension physique et retrouver une sensation de sol sous les pieds, quand tout bouge trop vite.",
+      "wave": "Delta 3 Hz",
+      "duration_s": 600,
+      "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/hz/hz-174.m4a",
+      "headphones": true
+    },
+    {
+      "id": "hz-285",
+      "hz": 285.0,
+      "title": "La réparation douce",
+      "subtitle": "Laisser le corps se remettre",
+      "description": "Une fréquence basse et enveloppante. La tradition l'associe au retour à l'équilibre : on la met en fond quand on récupère, après un effort ou une période difficile.",
+      "wave": "Thêta 4.5 Hz",
+      "duration_s": 600,
+      "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/hz/hz-285.m4a",
+      "headphones": true
+    },
+    {
+      "id": "hz-396",
+      "hz": 396.0,
+      "title": "La libération",
+      "subtitle": "Déposer la peur et la culpabilité",
+      "description": "La première des six tonalités du Solfège sacré, celle qu'on associe au relâchement de la peur et de la culpabilité. C'est aussi le fond sonore de la méditation « Libération du passé ».",
+      "wave": "Thêta 6 Hz",
+      "duration_s": 600,
+      "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/hz/hz-396.m4a",
+      "headphones": true
+    },
+    {
+      "id": "hz-417",
+      "hz": 417.0,
+      "title": "Le changement",
+      "subtitle": "Défaire ce qui bloque",
+      "description": "Celle du mouvement. On l'écoute quand quelque chose est coincé — une situation, une décision, une habitude — pour accompagner le changement plutôt que le subir.",
+      "wave": "Thêta 7 Hz",
+      "duration_s": 600,
+      "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/hz/hz-417.m4a",
+      "headphones": true
+    },
+    {
+      "id": "hz-432",
+      "hz": 432.0,
+      "title": "L'accord naturel",
+      "subtitle": "Se détendre, tout simplement",
+      "description": "L'accord que beaucoup de musiciens trouvent plus doux que le 440 Hz des diapasons modernes. Si tu ne sais pas par laquelle commencer, commence par celle-ci.",
+      "wave": "Alpha 10 Hz",
+      "duration_s": 600,
+      "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/hz/hz-432.m4a",
+      "headphones": true
+    },
+    {
+      "id": "hz-528",
+      "hz": 528.0,
+      "title": "Le cœur",
+      "subtitle": "Revenir à l'amour et à la réparation",
+      "description": "La plus connue de toutes, souvent appelée « la fréquence de l'amour ». On l'écoute pour adoucir le regard qu'on porte sur soi.",
+      "wave": "Alpha 8 Hz",
+      "duration_s": 600,
+      "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/hz/hz-528.m4a",
+      "headphones": true
+    },
+    {
+      "id": "hz-639",
+      "hz": 639.0,
+      "title": "Les liens",
+      "subtitle": "Apaiser ses relations",
+      "description": "La fréquence des relations : avec les proches, avec ceux qui comptent, avec ceux dont on s'est éloigné. À écouter avant une conversation qu'on redoute.",
+      "wave": "Alpha 9 Hz",
+      "duration_s": 600,
+      "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/hz/hz-639.m4a",
+      "headphones": true
+    },
+    {
+      "id": "hz-741",
+      "hz": 741.0,
+      "title": "La parole vraie",
+      "subtitle": "Dire ce qui doit être dit",
+      "description": "Celle de l'expression. On l'associe au nettoyage intérieur et à la capacité de dire sa vérité, simplement, sans se trahir.",
+      "wave": "Thêta 6 Hz",
+      "duration_s": 600,
+      "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/hz/hz-741.m4a",
+      "headphones": true
+    },
+    {
+      "id": "hz-852",
+      "hz": 852.0,
+      "title": "L'intuition",
+      "subtitle": "Entendre sa voix intérieure",
+      "description": "Une fréquence haute et claire. Elle accompagne le retour vers soi, quand on veut écouter ce qu'on sait déjà sans se l'avouer.",
+      "wave": "Thêta 5 Hz",
+      "duration_s": 600,
+      "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/hz/hz-852.m4a",
+      "headphones": true
+    },
+    {
+      "id": "hz-963",
+      "hz": 963.0,
+      "title": "Le silence",
+      "subtitle": "Le calme au-dessus des pensées",
+      "description": "La plus haute de l'échelle, la plus fine. Beaucoup l'utilisent en fin de séance, quand la tête s'est tue et qu'il ne reste que la présence.",
+      "wave": "Delta 2 Hz",
+      "duration_s": 600,
+      "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/hz/hz-963.m4a",
       "headphones": true
     }
   ]
