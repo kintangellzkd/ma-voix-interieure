@@ -1,42 +1,48 @@
 {
   "version": 1,
-  "updated_at": "2026-10-14",
+  "updated_at": "2026-10-15",
   "categories": [
+    {
+      "id": "aube",
+      "title": "L'aube",
+      "subtitle": "La pratique de chaque matin",
+      "order": 1
+    },
     {
       "id": "motivation",
       "title": "Motivation",
       "subtitle": "Commencer sa journée au sommet",
-      "order": 1
+      "order": 2
     },
     {
       "id": "guide-interieur",
       "title": "Guide intérieur",
       "subtitle": "Se connecter à sa sagesse intérieure",
-      "order": 2
+      "order": 3
     },
     {
       "id": "relaxation",
       "title": "Relaxation profonde",
       "subtitle": "Relâcher le corps et l'esprit",
-      "order": 3
+      "order": 4
     },
     {
       "id": "chakras",
       "title": "Chakras",
       "subtitle": "Aligner ses sept centres d'énergie",
-      "order": 4
+      "order": 5
     },
     {
       "id": "attraction",
       "title": "Loi d'attraction",
       "subtitle": "J'ai, je suis, j'ai reçu",
-      "order": 5
+      "order": 6
     },
     {
       "id": "liberation",
       "title": "Libération",
       "subtitle": "Refermer ce qui pèse encore",
-      "order": 6
+      "order": 7
     }
   ],
   "meditations": [
@@ -49,6 +55,17 @@
       "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/attraction-01.m4a?v=6",
       "image_url": "https://kintangellzkd.github.io/ma-voix-interieure/attraction.jpg?v=6",
       "headphones": true
+    },
+    {
+      "id": "aube-01",
+      "title": "La force de l'aube",
+      "category": "aube",
+      "description": "La pratique de fond : arriver, suivre son souffle, relâcher le corps, laisser passer les pensées, trouver la tiédeur, puis rester dans le silence. Celle qu'on refait chaque matin.",
+      "duration_s": 900,
+      "audio_url": "https://kintangellzkd.github.io/ma-voix-interieure/aube-01.m4a?v=6",
+      "image_url": "https://kintangellzkd.github.io/ma-voix-interieure/aube.jpg?v=6",
+      "headphones": true,
+      "featured": true
     },
     {
       "id": "chakras-01",
