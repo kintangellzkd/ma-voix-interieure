@@ -56,15 +56,46 @@ def police(nom, taille):
     return ImageFont.truetype(os.path.join(POLICE, nom), taille)
 
 
+def centrer(dr, largeur_img, txt, f, y, couleur, esp=0):
+    if esp:
+        largeur = sum(dr.textlength(c, font=f) for c in txt) + esp * (len(txt) - 1)
+        x = (largeur_img - largeur) / 2
+        for c in txt:
+            dr.text((x, y), c, font=f, fill=couleur)
+            x += dr.textlength(c, font=f) + esp
+    else:
+        dr.text(((largeur_img - dr.textlength(txt, font=f)) / 2, y), txt, font=f, fill=couleur)
+
+
+def _texte_paysage(sc):
+    """Calque du texte des vidéos 16:9, rendu une seule fois."""
+    W_, H_ = sc.w, sc.h
+    img = Image.new("RGBA", (W_, H_), (0, 0, 0, 0))
+    dr = ImageDraw.Draw(img)
+    hz = f"{sc.freq['hz']:g} Hz"
+    centrer(dr, W_, hz, police("InterDisplay-ExtraLight.otf", 132), H_ * 0.46 - 92, CREME + (235,))
+    centrer(dr, W_, sc.freq["title"], police("Inter-Light.otf", 40), H_ * 0.46 + 70, CREME + (200,))
+    centrer(dr, W_, sc.freq["wave"].upper() + "  ·  ÉCOUTEURS RECOMMANDÉS",
+            police("Inter-Regular.otf", 20), H_ - 118, OR + (190,), esp=3)
+    centrer(dr, W_, "MA VOIX INTÉRIEURE", police("Inter-Medium.otf", 18), H_ - 78, CREME + (120,), esp=6)
+    return img
+
+
 # ---------------------------------------------------------------- image ---
 class Scene:
-    def __init__(self, freq, teinte):
+    """Boucle d'ondes. w/h : format (paysage par défaut, 1080x1920 pour un Short).
+    calque_texte(scene) -> image RGBA du texte ; neige=True : la poussière tombe."""
+    def __init__(self, freq, teinte, w=None, h=None, calque_texte=None, neige=False):
         self.freq = freq
+        self.w, self.h = w or W, h or H
+        W_, H_ = self.w, self.h
+        self.s = min(W_, H_)                    # échelle : le petit côté
+        self.neige = neige
         self.teinte = np.array(teinte, np.float32) / 255
-        y, x = np.mgrid[0:H, 0:W].astype(np.float32)
-        self.cx, self.cy = W / 2, H * 0.46
+        y, x = np.mgrid[0:H_, 0:W_].astype(np.float32)
+        self.cx, self.cy = W_ / 2, H_ * 0.46
         self.x, self.y = x, y
-        self.d = np.hypot(x - self.cx, (y - self.cy) * 1.04) / H
+        self.d = np.hypot(x - self.cx, (y - self.cy) * 1.04) / self.s
         # fond : dégradé radial vert profond -> presque noir, vignette
         v = np.clip(self.d / 0.95, 0, 1)
         fond = FOND * (1.25 - 0.85 * v ** 1.4)[..., None]
@@ -72,9 +103,9 @@ class Scene:
         self.fond = fond.astype(np.float32)
         # bruit fixe très léger : casse les bandes du dégradé sans coûter
         rng = np.random.default_rng(int(freq["hz"]))
-        self.grain = (rng.standard_normal((H, W, 1)) * 0.0045).astype(np.float32)
+        self.grain = (rng.standard_normal((H_, W_, 1)) * 0.0045).astype(np.float32)
         # poussière lumineuse : trajectoires fermées sur la boucle
-        n = 70
+        n = 140 if neige else 70
         self.p_r = rng.uniform(0.12, 0.62, n)
         self.p_a = rng.uniform(0, 2 * np.pi, n)
         self.p_k = rng.choice([-1, 1], n)            # 1 tour par boucle
@@ -84,36 +115,16 @@ class Scene:
         self.p_s = rng.uniform(1.2, 3.2, n)
         self.p_l = rng.uniform(0.25, 0.9, n)
         # les ondes s'effacent derrière les mentions du bas
-        self.calme = (1 - 0.65 * np.clip((y / H - 0.84) / 0.05, 0, 1)).astype(np.float32)
-        self.texte = self._texte()
-
-    def _texte(self):
-        """Calque RGBA du texte, rendu une seule fois."""
-        img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-        dr = ImageDraw.Draw(img)
-        def centre(txt, f, y, couleur, esp=0):
-            if esp:
-                largeur = sum(dr.textlength(c, font=f) for c in txt) + esp * (len(txt) - 1)
-                x = (W - largeur) / 2
-                for c in txt:
-                    dr.text((x, y), c, font=f, fill=couleur)
-                    x += dr.textlength(c, font=f) + esp
-            else:
-                dr.text(((W - dr.textlength(txt, font=f)) / 2, y), txt, font=f, fill=couleur)
-        hz = f"{self.freq['hz']:g} Hz"
-        centre(hz, police("InterDisplay-ExtraLight.otf", 132), H * 0.46 - 92, CREME + (235,))
-        centre(self.freq["title"], police("Inter-Light.otf", 40), H * 0.46 + 70, CREME + (200,))
-        centre(self.freq["wave"].upper() + "  ·  ÉCOUTEURS RECOMMANDÉS",
-               police("Inter-Regular.otf", 20), H - 118, OR + (190,), esp=3)
-        centre("MA VOIX INTÉRIEURE", police("Inter-Medium.otf", 18), H - 78, CREME + (120,), esp=6)
+        self.calme = (1 - 0.65 * np.clip((y / H_ - 0.84) / 0.05, 0, 1)).astype(np.float32)
+        img = (calque_texte or _texte_paysage)(self)
         a = np.asarray(img).astype(np.float32) / 255
-        return a[..., :3], a[..., 3:4]
+        self.texte = a[..., :3], a[..., 3:4]
 
     def image(self, t):
         ph = 2 * np.pi * t / LOOP_S                 # phase de boucle 0..2π
         d = self.d
         souffle = 0.5 - 0.5 * np.cos(ph)            # 1 respiration par boucle
-        lum = np.zeros((H, W), np.float32)
+        lum = np.zeros((self.h, self.w), np.float32)
         # ondes concentriques qui partent du centre : une nouvelle toutes
         # les LOOP_S / n secondes, chacune traverse l'écran en une boucle
         n = 7
@@ -127,8 +138,8 @@ class Scene:
         # halo central qui respire
         lum += (0.30 + 0.25 * souffle) * np.exp(-(d / (0.16 + 0.03 * souffle)) ** 2)
         # ligne d'onde horizontale (2 crêtes défilent par boucle)
-        yy = (self.y - H * 0.80) / H
-        xx = self.x / W
+        yy = (self.y - self.h * 0.80) / self.s
+        xx = self.x / self.w
         onde = 0.018 * np.sin(2 * np.pi * (3 * xx - 2 * t / LOOP_S)) * np.sin(np.pi * xx)
         onde2 = 0.012 * np.sin(2 * np.pi * (5 * xx + t / LOOP_S) + 1.3) * np.sin(np.pi * xx)
         env = np.sin(np.pi * xx) ** 2
@@ -146,13 +157,18 @@ class Scene:
     def _poussiere(self, img, ph):
         a = self.p_a + self.p_k * ph
         r = self.p_r + self.p_w * np.sin(self.p_m * ph + self.p_ph) * 0.3
-        px = self.cx + np.cos(a) * r * H * 1.15
-        py = self.cy + np.sin(a) * r * H * 0.95
+        if self.neige:
+            # flocons : chute verticale, un passage complet par boucle
+            px = (self.p_a / (2 * np.pi)) * self.w + 18 * np.sin(ph * self.p_m + self.p_ph)
+            py = ((self.p_r + ph / (2 * np.pi)) % 1.0) * (self.h + 40) - 20
+        else:
+            px = self.cx + np.cos(a) * r * self.s * 1.15
+            py = self.cy + np.sin(a) * r * self.s * 0.95
         sc = 0.5 + 0.5 * np.sin(2 * ph + self.p_ph)   # scintillement
         for x0, y0, s, l, c in zip(px, py, self.p_s, self.p_l, sc):
             R = int(s * 4)
-            x1, x2 = max(int(x0) - R, 0), min(int(x0) + R + 1, W)
-            y1, y2 = max(int(y0) - R, 0), min(int(y0) + R + 1, H)
+            x1, x2 = max(int(x0) - R, 0), min(int(x0) + R + 1, self.w)
+            y1, y2 = max(int(y0) - R, 0), min(int(y0) + R + 1, self.h)
             if x1 >= x2 or y1 >= y2:
                 continue
             gx = self.x[y1:y2, x1:x2] - x0
@@ -169,7 +185,7 @@ X264 = ["-c:v", "libx264", "-preset", "slow", "-crf", "21", "-pix_fmt", "yuv420p
 
 def rendre_boucle(scene, dst):
     p = subprocess.Popen(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo",
-                          "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS),
+                          "-pix_fmt", "rgb24", "-s", f"{scene.w}x{scene.h}", "-r", str(FPS),
                           "-i", "-", *X264, "-an", dst], stdin=subprocess.PIPE)
     n = LOOP_S * FPS
     for k in range(n):
