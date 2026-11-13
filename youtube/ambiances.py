@@ -329,3 +329,28 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# ------------------------------------------------------------- miniatures ---
+TITRES = {
+    "neige": ("Neige qui tombe", "Nuit d'hiver · sons du vent"),
+    "aurores": ("Aurores boréales", "Lac de nuit · vent léger"),
+    "pluie": ("Pluie douce", "Lumières de la ville · son de pluie"),
+}
+
+
+def miniature(nom, dst, duree="1 H"):
+    """Miniature 1280x720 : la scène, un grand titre, la durée. Sans marque."""
+    sc = SCENES[nom]()
+    img = Image.fromarray((sc.image(LOOP_S * 0.3) * 255).astype(np.uint8))
+    img = img.resize((1280, 720), Image.LANCZOS).convert("RGBA")
+    calque = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    dr = ImageDraw.Draw(calque)
+    titre, sous = TITRES[nom]
+    gv.centrer(dr, 1280, titre, gv.police("InterDisplay-Light.otf", 128), 210, gv.CREME + (255,))
+    gv.centrer(dr, 1280, sous, gv.police("Inter-Regular.otf", 40), 380, gv.CREME + (225,))
+    gv.centrer(dr, 1280, duree, gv.police("Inter-SemiBold.otf", 44), 460, (255, 255, 255, 235), esp=6)
+    ombre = calque.filter(ImageFilter.GaussianBlur(12))
+    noir = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    noir.putalpha(ombre.getchannel("A").point(lambda v: int(v * 0.7)))
+    Image.alpha_composite(Image.alpha_composite(img, noir), calque).convert("RGB").save(dst, quality=92)
