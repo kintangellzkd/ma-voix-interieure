@@ -94,7 +94,74 @@ def _conv(imp, noyau, n):
     return oaconvolve(imp, noyau)[:n].astype(np.float32)
 
 
-SONS = {"neige": neige, "aurores": aurores}
+# ------------------------------------------------------------------ orage ---
+def eclairs(duree, graine=23):
+    """Instants des éclairs : (t, distance 0..1, variante). Partagés entre l'image et le son."""
+    rng = np.random.default_rng(graine)
+    ev, t = [], rng.uniform(6, 14)
+    while t < duree - 15:
+        ev.append((round(float(t), 2), float(rng.uniform(0, 1)) ** 1.8, int(rng.integers(0, 3))))
+        t += rng.uniform(22, 65)
+    return ev
+
+
+def _grains(rng, n, taux, tau_ms):
+    """Crépitement : impulsions aléatoires (Poisson) adoucies par une décroissance courte."""
+    imp = np.zeros(n, np.float32)
+    k = rng.poisson(taux * n / SR)
+    pos = rng.integers(0, n, k)
+    imp[pos] = rng.uniform(0.2, 1.0, k).astype(np.float32) ** 2
+    m = np.arange(int(tau_ms * 5e-3 * SR), dtype=np.float32)
+    return _conv(imp, np.exp(-m / (tau_ms * 1e-3 * SR)), n)
+
+
+def orage(duree, graine=29):
+    rng = np.random.default_rng(graine)
+    n = int(duree * SR)
+    rafale = _lent(rng, n, 0.03, 0.15) ** 1.3
+    canaux = []
+    for c in range(2):
+        # pluie battante : grondement large bande + crépitement des gouttes
+        nappe = _filtre(_filtre(_bruit(rng, n), "highpass", 350), "lowpass", 9000)
+        patter = _filtre(_bruit(rng, n), "highpass", 1500) * _grains(rng, n, 2500, 3)
+        pluie = _norm(nappe, 1.0) * (0.75 + 0.25 * rafale) + 0.9 * _norm(patter, 1.0)
+        vent = _filtre(_filtre(_bruit(rng, n), "lowpass", 600), "highpass", 50) * (0.15 + 0.85 * rafale)
+        sifflet = _filtre(_bruit(rng, n), "bandpass", [520, 580]) * rafale ** 2.5
+        canaux.append(0.55 * _norm(pluie, 1.0) + 0.45 * _norm(vent, 1.0) + 0.12 * _norm(sifflet, 1.0))
+    fond = np.stack(canaux, 1)
+    fond = 0.35 * fond / (np.abs(fond).max() + 1e-9)
+
+    tonnerre = np.zeros((n, 2), np.float32)
+    for t0, dist, _ in eclairs(duree):
+        retard = 0.25 + dist * 3.5                    # la lumière arrive avant le son
+        force = 1.0 - 0.6 * dist
+        L = int(14 * SR)
+        k = np.arange(L, dtype=np.float32) / SR
+        env = np.zeros(L, np.float32)
+        for _ in range(rng.integers(4, 9)):           # roulement : plusieurs grondements
+            d = rng.uniform(0, 3.5) * (0.4 + dist)
+            a = rng.uniform(0.4, 1.0)
+            tau = rng.uniform(1.5, 4.5)
+            env += a * np.clip(k - d, 0, None) ** 0.3 * np.exp(-np.clip(k - d, 0, None) / tau) * (k >= d)
+        env /= env.max() + 1e-9
+        gr = _filtre(_filtre(_bruit(rng, L), "lowpass", 140 + 260 * (1 - dist)), "highpass", 25)
+        gr = _norm(gr, 1.0) * env
+        if dist < 0.45:                               # proche : claquement sec
+            cl = _filtre(_bruit(rng, L), "bandpass", [900, 5000]) * np.exp(-k / 0.18)
+            gr += 0.7 * (1 - dist) * _norm(cl, 1.0)
+        i0 = int((t0 + retard) * SR)
+        j = min(n, i0 + L) - i0
+        if j <= 0:
+            continue
+        pan = rng.uniform(-0.4, 0.4)
+        tonnerre[i0:i0 + j, 0] += gr[:j] * force * (1 - pan)
+        tonnerre[i0:i0 + j, 1] += gr[:j] * force * (1 + pan)
+    x = fond + 0.75 * tonnerre / (np.abs(tonnerre).max() + 1e-9)
+    x = np.tanh(1.6 * x) / np.tanh(1.6)                # compression douce : fort sans saturer
+    return _norm(x, 0.89)
+
+
+SONS = {"neige": neige, "aurores": aurores, "orage": orage}
 
 
 def fichier(scene, duree, dossier):
