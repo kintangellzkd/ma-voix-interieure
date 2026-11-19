@@ -290,7 +290,11 @@ def assembler(boucle, filtre_audio, minutes, dst, tmp):
         fh.write(f"file '{fer}'\n")
     audio = os.path.join(tmp, "audio.m4a")
     fin = f"aformat=channel_layouts=stereo,afade=t=in:st=0:d=6,afade=t=out:st={total - 10}:d=10"
-    if "[" in filtre_audio:
+    import sons
+    wav = sons.fichier(os.path.basename(boucle).split("-")[0], total, os.path.join(tmp, "sons"))
+    if wav:
+        entree = ["-i", wav, "-af", fin]
+    elif "[" in filtre_audio:
         entree = ["-filter_complex", f"{filtre_audio},{fin}[out]", "-map", "[out]"]
     else:
         entree = ["-f", "lavfi", "-i", f"{filtre_audio},{fin}"]

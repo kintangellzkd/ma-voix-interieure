@@ -23,6 +23,7 @@ import soundfile as sf
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 import ambiances as amb
+import sons
 import generer_videos as gv
 from textes_poemes import RECUEILS
 
@@ -131,6 +132,10 @@ def assembler(scene, ecrans, voix_wav, total, dst, tmp, vertical=False, vbit="48
         sc = amb.SCENES[scene]()
         amb.rendre(sc, boucle)
     entrees = ["-stream_loop", "-1", "-i", boucle, "-i", voix_wav]
+    wav = sons.fichier(scene, total, os.path.join(SORTIE, "sons"))
+    if wav:
+        entrees += ["-i", wav]
+    base = 3 if wav else 2
     fond = "crop=608:1080,scale=1080:1920:flags=lanczos," if vertical else ""
     graphe = [f"[0:v]{fond}trim=0:{total},setpts=PTS-STARTPTS,"
               f"fade=t=in:st=0:d=4,fade=t=out:st={total - 6}:d=6[b0]"]
@@ -140,13 +145,13 @@ def assembler(scene, ecrans, voix_wav, total, dst, tmp, vertical=False, vbit="48
         png = os.path.join(tmp, f"e{i}.png")
         calque(W, H, kind, txt, grand=vertical).save(png)
         entrees += ["-loop", "1", "-framerate", "30", "-t", f"{d:.2f}", "-i", png]
-        n = i + 2
+        n = i + base
         fi = min(1.2, d / 3)
         graphe.append(f"[{n}:v]format=rgba,fade=t=in:st=0:d={fi}:alpha=1,"
                       f"fade=t=out:st={d - 1.4:.2f}:d=1.4:alpha=1,setpts=PTS+{a:.2f}/TB[t{i}]")
         graphe.append(f"[b{i}][t{i}]overlay=eof_action=pass:format=auto[b{i + 1}]")
     graphe.append(f"[b{len(ecrans)}]format=yuv420p[v]")
-    son = amb.SCENES[scene].audio
+    son = "[2:a]anull" if wav else amb.SCENES[scene].audio
     graphe.append(f"{son},atrim=0:{total},volume=0.55,aformat=channel_layouts=stereo[amb]")
     graphe.append("[1:a]aresample=48000,highpass=f=70,lowpass=f=9000,"
                   "aecho=0.8:0.6:45|95:0.18|0.10,volume=1.15,"
