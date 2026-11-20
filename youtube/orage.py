@@ -138,14 +138,16 @@ def assembler(minutes, dst, vbit, tmp):
         graphe.append(f"[b{v}][{v + 2}:v]overlay=shortest=0:eof_action=repeat:enable='{quand}'[b{v + 1}]")
     graphe.append("[b3]format=yuv420p[v]")
     graphe.append(f"[1:a]afade=t=in:st=0:d=5,afade=t=out:st={total - 10}:d=10[a]")
-    script = os.path.join(tmp, "graphe.txt")
-    open(script, "w").write(";\n".join(graphe))
-    commun = [*entrees, "-filter_complex_script", script, "-map", "[v]", "-t", str(total),
+    s1, s2 = os.path.join(tmp, "graphe1.txt"), os.path.join(tmp, "graphe2.txt")
+    open(s1, "w").write(";\n".join(graphe[:-1]))      # passe 1 : image seule
+    open(s2, "w").write(";\n".join(graphe))
+    commun = ["-map", "[v]", "-t", str(total),
               "-c:v", "libx264", "-preset", "medium", "-b:v", vbit, "-g", "60", "-r", "30"]
     log = os.path.join(tmp, "2pass")
-    subprocess.run(["ffmpeg", "-v", "error", "-y", *commun, "-pass", "1", "-passlogfile", log,
-                    "-an", "-f", "null", "/dev/null"], check=True)
-    subprocess.run(["ffmpeg", "-v", "error", "-y", *commun, "-pass", "2", "-passlogfile", log,
+    subprocess.run(["ffmpeg", "-v", "error", "-y", *entrees, "-filter_complex_script", s1, *commun,
+                    "-pass", "1", "-passlogfile", log, "-an", "-f", "null", "/dev/null"], check=True)
+    subprocess.run(["ffmpeg", "-v", "error", "-y", *entrees, "-filter_complex_script", s2, *commun,
+                    "-pass", "2", "-passlogfile", log,
                     "-map", "[a]", "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", dst],
                    check=True)
 
