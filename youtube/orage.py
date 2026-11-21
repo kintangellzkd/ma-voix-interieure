@@ -112,7 +112,7 @@ def foudre(graine, dst, xpos=None):
     Image.fromarray(rgba).save(dst)
 
 
-def assembler(minutes, dst, vbit, tmp):
+def assembler(minutes, dst, vbit, tmp, une_passe=False):
     total = minutes * 60
     boucle = os.path.join(SORTIE, "orage-boucle.mp4")
     if not os.path.exists(boucle):
@@ -144,6 +144,11 @@ def assembler(minutes, dst, vbit, tmp):
     commun = ["-map", "[v]", "-t", str(total),
               "-c:v", "libx264", "-preset", "medium", "-b:v", vbit, "-g", "60", "-r", "30"]
     log = os.path.join(tmp, "2pass")
+    if une_passe:                                   # plus rapide (longues durées)
+        subprocess.run(["ffmpeg", "-v", "error", "-y", *entrees, "-filter_complex_script", s2, *commun,
+                        "-maxrate", vbit, "-bufsize", "2M", "-map", "[a]", "-c:a", "aac", "-b:a", "128k",
+                        "-movflags", "+faststart", dst], check=True)
+        return
     subprocess.run(["ffmpeg", "-v", "error", "-y", *entrees, "-filter_complex_script", s1, *commun,
                     "-pass", "1", "-passlogfile", log, "-an", "-f", "null", "/dev/null"], check=True)
     subprocess.run(["ffmpeg", "-v", "error", "-y", *entrees, "-filter_complex_script", s2, *commun,
@@ -179,6 +184,7 @@ def main():
     ap.add_argument("--minutes", type=int, default=20)
     ap.add_argument("--vbit", default="520k")
     ap.add_argument("--apercu", action="store_true")
+    ap.add_argument("--une-passe", action="store_true")
     arg = ap.parse_args()
     os.makedirs(SORTIE, exist_ok=True)
     duree = "1 H" if arg.minutes == 60 else f"{arg.minutes} MIN"
@@ -190,7 +196,7 @@ def main():
     tmp = tempfile.mkdtemp(prefix="orage-")
     try:
         dst = os.path.join(SORTIE, f"orage-{arg.minutes}min.mp4")
-        assembler(arg.minutes, dst, arg.vbit, tmp)
+        assembler(arg.minutes, dst, arg.vbit, tmp, arg.une_passe)
         print("->", dst, f"{os.path.getsize(dst) / 1e6:.0f} Mo", flush=True)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
