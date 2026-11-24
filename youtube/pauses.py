@@ -104,9 +104,9 @@ def calque(W, H, kind, txt, grand=False):
     for l in lignes:
         poemes.gv.centrer(dr, W, l, f, y, poemes.gv.CREME + (245,))
         y += pas
-    ombre = img.filter(ImageFilter.GaussianBlur(16))
+    ombre = img.filter(ImageFilter.GaussianBlur(22))
     noir = Image.new("RGBA", img.size, (0, 0, 0, 0))
-    noir.putalpha(ombre.getchannel("A").point(lambda v: int(v * 0.8)))
+    noir.putalpha(ombre.getchannel("A").point(lambda v: min(255, int(v * 1.6))))
     return Image.alpha_composite(noir, img)
 
 

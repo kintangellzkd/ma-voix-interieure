@@ -53,9 +53,9 @@ class Lever:
         img = np.zeros((H, W, 3), np.float32)
         img[: self.hor] = ciel
         sy = self.hor - 10 - 200 * p - 70 * b              # le soleil monte, et plus encore à l'inspiration
-        halo(img, W / 2, sy, 160 + 110 * b, (255, 170, 90), 0.55 + 0.45 * b)
+        halo(img, W / 2, sy, 160 + 60 * b, (255, 170, 90), 0.5 + 0.25 * b)
         disque = np.clip(42 - np.hypot(X - W / 2, Y - sy), 0, 1.5)[..., None] / 1.5
-        img = img * (1 - disque) + disque * np.float32([1.0, 0.86, 0.62])
+        img = np.clip(img, 0, 1) * (1 - disque) + disque * np.float32([1.0, 0.97, 0.86])
         for x in range(W):                                  # montagnes au loin
             img[self.crete[x]: self.hor, x] = np.float32([0.16, 0.12, 0.16]) * (0.8 + 0.4 * p)
         # eau : reflet du ciel, assombri, avec une colonne de soleil qui scintille
