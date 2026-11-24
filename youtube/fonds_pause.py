@@ -163,7 +163,8 @@ class Nuages:
         ombre = np.clip((n - 0.68) * 3, 0, 1)[..., None]
         nuage = np.float32([0.97, 0.97, 1.0]) * (1 - 0.25 * ombre)
         img = img * (1 - a) + nuage * a
-        return np.clip(img * 0.82, 0, 1)
+        bande = 1 - 0.45 * np.exp(-((Y - H * 0.42) / 150) ** 2) - 0.3 * np.exp(-((Y - H * 0.62) / 120) ** 2)
+        return np.clip(img * 0.78 * bande[..., None], 0, 1)
 
 
 # 6 -------------------------------------------------------------- tasse fumante
