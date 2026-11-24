@@ -1,7 +1,8 @@
 """Fonds animés verticaux pour les Shorts « Pause », un par message.
 
 Rendus en 540x960 (doux, sans détail fin) puis agrandis en 1080x1920 par ffmpeg.
-Chaque scène : image(t, duree) -> tableau float32 HxWx3 dans [0, 1].
+Chaque scène : image(t, duree, b) -> tableau float32 HxWx3 dans [0, 1], où b (0..1)
+est le souffle : 1 = poumons pleins. L'image respire avec le guide.
 """
 import subprocess
 
@@ -44,15 +45,15 @@ class Lever:
         self.crete = (self.hor - 28 - m).astype(np.int32)
         self.ondes = bruit_periodique(rng, H, W, 40, ratio=0.15)
 
-    def image(self, t, d):
+    def image(self, t, d, b=0.0):
         p = t / d
         chaud = 0.55 + 0.45 * p
         ciel = degrade((30, 40, 80), (int(240 * chaud), int(150 * chaud + 40), int(110 * chaud)), 1.6,
                        h=self.hor)
         img = np.zeros((H, W, 3), np.float32)
         img[: self.hor] = ciel
-        sy = self.hor - 10 - 200 * p                       # le soleil monte
-        halo(img, W / 2, sy, 160, (255, 170, 90), 0.55)
+        sy = self.hor - 10 - 200 * p - 70 * b              # le soleil monte, et plus encore à l'inspiration
+        halo(img, W / 2, sy, 160 + 110 * b, (255, 170, 90), 0.55 + 0.45 * b)
         disque = np.clip(42 - np.hypot(X - W / 2, Y - sy), 0, 1.5)[..., None] / 1.5
         img = img * (1 - disque) + disque * np.float32([1.0, 0.86, 0.62])
         for x in range(W):                                  # montagnes au loin
@@ -61,7 +62,7 @@ class Lever:
         ref = img[self.hor - 1:: -1][: H - self.hor] * 0.55
         ond = np.roll(self.ondes, int(t * 20), axis=0)[: H - self.hor]
         col = np.exp(-((X[: H - self.hor] - W / 2) / (40 + 0.25 * Y[: H - self.hor])) ** 2)
-        scint = col * np.clip(ond * 2.2 - 0.9, 0, 1) * 0.9
+        scint = col * np.clip(ond * 2.2 - 0.9, 0, 1) * (0.9 + 0.6 * b)
         img[self.hor:] = ref + scint[..., None] * np.float32([1.0, 0.8, 0.55])
         return np.clip(img * 0.85, 0, 1)
 
@@ -84,24 +85,24 @@ class Plume:
         self.bokeh = [(rng.uniform(0, W), rng.uniform(0, H), rng.uniform(20, 60), rng.uniform(0.08, 0.2))
                       for _ in range(18)]
 
-    def image(self, t, d):
+    def image(self, t, d, b=0.0):
         img = degrade((70, 60, 105), (175, 135, 150), 0.9)
         for bx, by, r, a in self.bokeh:
-            halo(img, bx, (by - t * 8) % H, r, (255, 225, 230), a)
+            halo(img, bx, (by - t * 8) % H, r * (1 + 0.4 * b), (255, 225, 230), a * (1 + b))
         base = Image.fromarray((np.clip(img, 0, 1) * 255).astype(np.uint8)).convert("RGBA")
         ang = 25 * np.sin(t * 0.7)
         pl = self.plume.rotate(ang + 20, resample=Image.BICUBIC, expand=True)
         x = W / 2 + 90 * np.sin(t * 0.55) - pl.width / 2
-        y = -320 + (H * 0.85) * t / d
+        y = -60 + (H * 0.55) * t / d - 180 * b
         base.alpha_composite(pl, (int(x), int(y)))
         return np.clip(vers_np(base) * 0.85, 0, 1)
 
 
 # 3 -------------------------------------------------------------- sablier
 class Sablier:
-    def image(self, t, d):
+    def image(self, t, d, b=0.0):
         img = degrade((30, 24, 22), (70, 50, 38))
-        halo(img, W * 0.5, H * 0.80, 220, (255, 190, 130), 0.25)
+        halo(img, W * 0.5, H * 0.80, 220 + 160 * b, (255, 190, 130), 0.25 + 0.55 * b)
         base = Image.fromarray((np.clip(img, 0, 1) * 255).astype(np.uint8))
         dr = ImageDraw.Draw(base, "RGBA")
         cx, haut, bas, lg = W / 2, H * 0.64, H * 0.95, 120
@@ -131,7 +132,7 @@ class Ronds:
                         for t0 in np.arange(0.5, 80, 4.5) + rng.uniform(0, 1.5, 18)]
         self.caust = bruit_periodique(rng, H, W, 8)
 
-    def image(self, t, d):
+    def image(self, t, d, b=0.0):
         img = degrade((18, 52, 66), (8, 26, 36))
         c = np.roll(self.caust, (int(t * 6), int(t * 4)), axis=(0, 1))
         img += (np.clip(c * 2 - 1.0, 0, 1) * 0.06)[..., None] * np.float32([0.6, 0.9, 1.0])
@@ -146,6 +147,12 @@ class Ronds:
                     continue
                 img += (np.exp(-((dist - r) / 5) ** 2) * 0.5 * np.exp(-a / 3.5) * (1 - 0.25 * j))[..., None] \
                     * np.float32([0.8, 0.95, 1.0])
+        if b > 0.01:
+            dist = np.hypot(X - W / 2, (Y - H * 0.70) * 1.9)
+            for j, k in enumerate((1.0, 0.82, 0.64)):
+                r = 30 + 230 * b * k
+                img += (np.exp(-((dist - r) / 7) ** 2) * 0.55 * b * (1 - 0.25 * j))[..., None] \
+                    * np.float32([0.85, 0.97, 1.0])
         return np.clip(img, 0, 1)
 
 
@@ -156,15 +163,17 @@ class Nuages:
         self.n1 = bruit_periodique(rng, H, W * 2, 9, ratio=0.45)
         self.n2 = bruit_periodique(rng, H, W * 2, 4, ratio=0.45)
 
-    def image(self, t, d):
+    def image(self, t, d, b=0.0):
         img = degrade((55, 105, 170), (165, 195, 225), 1.2)
         n = 0.6 * np.roll(self.n1, int(t * 14), axis=1)[:, :W] + 0.4 * np.roll(self.n2, int(t * 7), axis=1)[:, :W]
         a = np.clip((n - 0.5) * 3.5, 0, 1)[..., None]
         ombre = np.clip((n - 0.68) * 3, 0, 1)[..., None]
         nuage = np.float32([0.97, 0.97, 1.0]) * (1 - 0.25 * ombre)
+        halo(img, W * 0.5, H * 0.14, 100 + 110 * b, (255, 230, 180), 0.55 * b)
+        a = a * (1 - 0.45 * b)
         img = img * (1 - a) + nuage * a
         bande = 1 - 0.45 * np.exp(-((Y - H * 0.42) / 150) ** 2) - 0.3 * np.exp(-((Y - H * 0.62) / 120) ** 2)
-        return np.clip(img * 0.78 * bande[..., None], 0, 1)
+        return np.clip(img * (0.78 + 0.14 * b) * bande[..., None], 0, 1)
 
 
 # 6 -------------------------------------------------------------- tasse fumante
@@ -173,22 +182,23 @@ class Tasse:
         self.rng = np.random.default_rng(6)
         self.vols = [(self.rng.uniform(0, 6), self.rng.uniform(-30, 30)) for _ in range(4)]
 
-    def image(self, t, d):
+    def image(self, t, d, b=0.0):
         img = degrade((32, 24, 20), (78, 52, 36))
         halo(img, W * 0.85, H * 0.15, 300, (255, 200, 140), 0.22)
-        halo(img, W * 0.5, H * 0.86, 230, (255, 180, 110), 0.18)
+        halo(img, W * 0.5, H * 0.86, 230 + 120 * b, (255, 180, 110), 0.18 + 0.3 * b)
         base = Image.fromarray((np.clip(img, 0, 1) * 255).astype(np.uint8)).convert("RGBA")
         cx, top = W / 2, H * 0.80
         vap = Image.new("L", (W, H), 0)
         dv = ImageDraw.Draw(vap)
         for ph, dx in self.vols:
             pts = []
-            for yy in np.arange(top - 10, H * 0.48, -6):
-                hgt = (top - yy) / (top - H * 0.48)
+            ht = H * (0.58 - 0.22 * b)
+            for yy in np.arange(top - 10, ht, -6):
+                hgt = (top - yy) / (top - ht)
                 x = cx + dx * (1 - hgt) + 28 * hgt * np.sin(yy * 0.025 + t * 1.3 + ph)
                 pts.append((x, yy))
             for i in range(len(pts) - 1):
-                a = int(165 * (1 - i / len(pts)) * min(1, i / 4 + 0.2))
+                a = int((140 + 100 * b) * (1 - i / len(pts)) * min(1, i / 4 + 0.2))
                 dv.line([pts[i], pts[i + 1]], fill=a, width=10)
         vap = vap.filter(ImageFilter.GaussianBlur(9))
         blanc = Image.new("RGBA", (W, H), (245, 235, 225, 0))
@@ -207,14 +217,14 @@ SCENES = {"lever": Lever, "plume": Plume, "sablier": Sablier, "ronds": Ronds, "n
           "tasse": Tasse}
 
 
-def rendre(nom, duree, dst):
+def rendre(nom, duree, dst, souffle=lambda t: 0.0):
     sc = SCENES[nom]()
     p = subprocess.Popen(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24",
                           "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
                           "-vf", "scale=1080:1920:flags=bicubic", "-c:v", "libx264", "-preset", "medium",
                           "-crf", "16", "-pix_fmt", "yuv420p", "-an", dst], stdin=subprocess.PIPE)
     for k in range(int(duree * FPS)):
-        p.stdin.write((sc.image(k / FPS, duree) * 255 + 0.5).astype(np.uint8).tobytes())
+        p.stdin.write((sc.image(k / FPS, duree, souffle(k / FPS)) * 255 + 0.5).astype(np.uint8).tobytes())
     p.stdin.close()
     if p.wait():
         raise RuntimeError("ffmpeg a échoué")

@@ -12,6 +12,7 @@ Usage : python3 youtube/pauses.py [1 2 ...]   (défaut : tous)
 """
 import hashlib
 import io
+import re
 import json
 import os
 import shutil
@@ -29,37 +30,39 @@ from poemes import SR, piste_voix
 import fonds_pause
 
 VOIX_ID = os.environ.get("ELEVENLABS_VOICE", "ucMmKRQbfDEYyb2IIGax")   # « Aurore - Calm & Warm »
-MODELE = "eleven_multilingual_v2"
-REGLAGES = dict(stability=0.62, similarity_boost=0.85, style=0.12, use_speaker_boost=True, speed=0.9)
+MODELE = "eleven_v3"                     # accepte des indications de ton : [smiling], [warmly]…
+REGLAGES = dict(stability=0.5, similarity_boost=0.8, use_speaker_boost=True)
 SORTIE = os.path.join(poemes.gv.RACINE, "youtube", "sortie", "pauses")
 
-RESPIRE = "__respire__"   # pause guidée : inspire 3 s, expire 3,5 s
-
-# (scène, [phrases]) ; RESPIRE insère une respiration guidée.
+# Script : phrases (avec indications de ton entre crochets, non affichées) et
+# respirations ("IN", secondes) / ("OUT", secondes). Une phrase « Respire… » ou
+# « Expire… » juste avant devient le guide de respiration à l'écran.
+IN, OUT = (lambda s=3.0: ("IN", s)), (lambda s=3.5: ("OUT", s))
 SCRIPTS = [
-    ("lever", ["Hé… stop.", "Rien ne presse.", "Tu peux prendre un moment pour toi.",
-               "Respire.", RESPIRE, "Tu as le droit de t'arrêter deux secondes.",
-               "Respire.", RESPIRE, "Bonne journée."]),
-    ("plume", ["Tes épaules.", "Elles sont montées jusqu'à tes oreilles, hein ?",
-               "Laisse-les redescendre.", "Respire.", RESPIRE, "Voilà.",
-               "Juste ça, c'est déjà beaucoup.", "Bonne journée."]),
-    ("sablier", ["Si tu lis ceci, c'est un signe.", "Pas un signe de l'univers…",
-                 "juste un signe que tu peux ralentir.", "Respire.", RESPIRE,
-                 "Ta liste peut attendre trente secondes.", "Respire encore.", RESPIRE,
-                 "Allez. Bonne journée."]),
-    ("ronds", ["Desserre ta mâchoire.", "Oui, toi.", "Laisse ta langue se poser.",
-               "Respire.", RESPIRE, "Tu n'as rien à prouver, là, maintenant.",
-               "Respire.", RESPIRE, "Bonne journée."]),
-    ("nuages", ["Ce que tu ressens en ce moment…", "c'est correct.",
-               "Ça va passer, comme un nuage.", "Respire.", RESPIRE,
-               "Tu n'es pas obligé de tout régler aujourd'hui.", "Respire.", RESPIRE,
-               "Bonne journée."]),
-    ("tasse", ["T'en fais beaucoup.", "Je le sais.", "Alors, pour les vingt prochaines secondes…",
-                 "tu ne fais rien.", "Respire.", RESPIRE, "Rien d'autre.", "Respire.", RESPIRE,
-                 "Bonne journée."]),
+    ("lever", ["[warmly] Hey ! Arrête-toi deux secondes.", "[smiling] Prends ce moment pour toi.",
+               "[softly] Respire…", IN(2.0), "[warmly] Ça va aller. Ça va passer. C'est correct.",
+               "[softly] Expire…", OUT(), "[smiling] Bonne journée !"]),
+    ("plume", ["[playfully] Psst… tes épaules sont collées à tes oreilles.",
+               "[laughs softly] On les descend ?", "[softly] Respire…", IN(), "[softly] Expire…", OUT(),
+               "[smiling] Ahh, c'est mieux. Bonne journée !"]),
+    ("sablier", ["[cheerfully] Hey ! Ta liste peut attendre dix secondes. Promis.",
+                 "[softly] Respire…", IN(), "[softly] Expire…", OUT(),
+                 "[smiling] Tu vois ? Le monde tourne encore. Bonne journée !"]),
+    ("ronds", ["[playfully] Petit test : desserre ta mâchoire.", "[chuckles] T'étais crispé, hein ?",
+               "[softly] Respire…", IN(), "[softly] Expire…", OUT(), "[smiling] Parfait. Bonne journée !"]),
+    ("nuages", ["[warmly] Hey… ce que tu ressens là, c'est correct.", "[softly] Respire…", IN(2.0),
+                "[warmly] Ça va passer, comme un nuage.", "[softly] Expire…", OUT(),
+                "[smiling] Bonne journée !"]),
+    ("tasse", ["[cheerfully] Pause café… sans le café !", "[warmly] Juste toi, deux secondes.",
+               "[softly] Respire…", IN(), "[softly] Expire…", OUT(),
+               "[smiling] Bon, tu peux y retourner. Bonne journée !"]),
 ]
 
-P_COURTE, P_LONGUE, INSPIRE, EXPIRE = 0.9, 1.6, 3.0, 3.5
+P_PHRASE = 0.45
+
+
+def affiche(texte):
+    return re.sub(r"\[[^\]]*\]\s*", "", texte).strip()
 
 
 def voix(texte):
@@ -85,7 +88,7 @@ def voix(texte):
 
 
 def calque(W, H, kind, txt, grand=False):
-    """Texte large pour mobile ; « inspire/expire » avec un cercle de respiration."""
+    """Texte large pour mobile (phrases et guide « inspire… / expire… »)."""
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     dr = ImageDraw.Draw(img)
     f = ImageFont.truetype(poemes.SERIF, 96 if kind == "strophe" else 84)
@@ -101,10 +104,6 @@ def calque(W, H, kind, txt, grand=False):
     for l in lignes:
         poemes.gv.centrer(dr, W, l, f, y, poemes.gv.CREME + (245,))
         y += pas
-    if kind == "fin":
-        r = 210 if txt.startswith("inspire") else 150
-        cx, cy = W / 2, H * 0.62
-        dr.ellipse([cx - r, cy - r, cx + r, cy + r], outline=poemes.gv.CREME + (170,), width=4)
     ombre = img.filter(ImageFilter.GaussianBlur(16))
     noir = Image.new("RGBA", img.size, (0, 0, 0, 0))
     noir.putalpha(ombre.getchannel("A").point(lambda v: int(v * 0.8)))
@@ -113,24 +112,32 @@ def calque(W, H, kind, txt, grand=False):
 
 
 
-def construire(phrases):
+def construire(script):
     """Ligne de temps : voix, écrans, et instants des coups de bol (force)."""
-    morceaux, ecrans, coups, t = [], [], [(0.2, 1.0)], 3.2
-    for i, p in enumerate(phrases):
-        if p == RESPIRE:
-            coups.append((t - 0.1, 0.55))
-            ecrans.append((t, t + INSPIRE, "fin", "inspire…"))
-            ecrans.append((t + INSPIRE, t + INSPIRE + EXPIRE, "fin", "expire…"))
-            t += INSPIRE + EXPIRE + 0.6
+    morceaux, ecrans, coups, t = [], [], [(0.2, 1.0)], 2.2
+    guide = None                                   # début du « Respire… » / « Expire… » parlé
+    for p in script:
+        if isinstance(p, tuple):
+            kind, d = p
+            debut = guide if guide is not None else t
+            if kind == "IN":
+                coups.append((debut - 0.1, 0.5))
+            ecrans.append((debut, t + d, "fin", "inspire…" if kind == "IN" else "expire…"))
+            t += d
+            guide = None
             continue
         a = voix(p)
         morceaux.append((t, a))
         d = len(a) / SR
-        fin = p.endswith(("…", ".", "?", "!"))
-        ecrans.append((t - 0.3, t + d + (1.0 if fin else 0.6), "strophe", p))
-        t += d + (P_LONGUE if fin else P_COURTE)
-    coups.append((t - 0.6, 0.9))
-    return morceaux, ecrans, coups, t + 7.0
+        txt = affiche(p)
+        if txt.lower().rstrip("….") in ("respire", "expire"):
+            guide = t
+        else:
+            # pendant une inspiration en cours, la phrase s'affiche par-dessus le cercle
+            ecrans.append((t - 0.2, t + d + 0.5, "strophe", txt))
+        t += d + P_PHRASE
+    coups.append((t - 0.3, 0.9))
+    return morceaux, ecrans, coups, t + 5.0
 
 
 def bol_tibetain(duree, coups, dst, f0=196.0):
@@ -164,10 +171,27 @@ def bol_tibetain(duree, coups, dst, f0=196.0):
     sf.write(dst, sortie, sr)
 
 
+def courbe_souffle(ecrans):
+    """b(t) : monte de 0 à 1 pendant « inspire », redescend pendant « expire »."""
+    phases = [(a, b, 1.0 if txt.startswith("inspire") else 0.0)
+              for a, b, kind, txt in ecrans if kind == "fin"]
+
+    def b(t):
+        val = 0.0
+        for a, fin, cible in phases:
+            if t < a:
+                break
+            x = min(1.0, (t - a) / max(fin - a, 0.1))
+            x = x * x * (3 - 2 * x)                     # douceur
+            val = val + (cible - val) * x if t < fin else cible
+        return val
+    return b
+
+
 def video(scene, ecrans, total, dst, tmp):
-    """Fond animé de la scène + textes en fondu (sans son)."""
+    """Fond animé de la scène, qui respire avec le guide, + textes en fondu (sans son)."""
     fond = os.path.join(tmp, "fond.mp4")
-    fonds_pause.rendre(scene, total, fond)
+    fonds_pause.rendre(scene, total, fond, courbe_souffle(ecrans))
     entrees, graphe = ["-i", fond], [f"[0:v]fade=t=in:st=0:d=1.5,fade=t=out:st={total - 3}:d=3[b0]"]
     for i, (a, b, kind, txt) in enumerate(ecrans):
         a, d = max(a, 0.3), b - max(a, 0.3)
