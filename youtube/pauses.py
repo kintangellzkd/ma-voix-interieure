@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Shorts « Pause » : courts messages pour s'arrêter et respirer, lus avec la voix
-ElevenLabs de l'auteur, sur les images d'ambiance (neige, aurores, pluie) et un bol tibétain qui
-résonne (au début, à chaque respiration, à la fin). Sans marque.
+ElevenLabs « Aurore » (celle des méditations), sur un fond animé propre à chaque
+message (fonds_pause.py) et un bol tibétain qui résonne (au début, à chaque
+respiration, à la fin). Sans marque.
 
 Chaque phrase est synthétisée séparément puis posée sur une ligne de temps avec de
 vraies pauses ; pendant « Respire », un guide « inspire… / expire… » s'affiche.
@@ -24,9 +25,10 @@ import soundfile as sf
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 import poemes
-from poemes import SR, piste_voix, assembler
+from poemes import SR, piste_voix
+import fonds_pause
 
-VOIX_ID = os.environ.get("ELEVENLABS_VOICE", "n7xHuG7KKUMlBjUY9h0K")   # « Christian Voix »
+VOIX_ID = os.environ.get("ELEVENLABS_VOICE", "ucMmKRQbfDEYyb2IIGax")   # « Aurore - Calm & Warm »
 MODELE = "eleven_multilingual_v2"
 REGLAGES = dict(stability=0.62, similarity_boost=0.85, style=0.12, use_speaker_boost=True, speed=0.9)
 SORTIE = os.path.join(poemes.gv.RACINE, "youtube", "sortie", "pauses")
@@ -35,24 +37,24 @@ RESPIRE = "__respire__"   # pause guidée : inspire 3 s, expire 3,5 s
 
 # (scène, [phrases]) ; RESPIRE insère une respiration guidée.
 SCRIPTS = [
-    ("pluie", ["Hé… stop.", "Rien ne presse.", "Tu peux prendre un moment pour toi.",
+    ("lever", ["Hé… stop.", "Rien ne presse.", "Tu peux prendre un moment pour toi.",
                "Respire.", RESPIRE, "Tu as le droit de t'arrêter deux secondes.",
                "Respire.", RESPIRE, "Bonne journée."]),
-    ("neige", ["Tes épaules.", "Elles sont montées jusqu'à tes oreilles, hein ?",
+    ("plume", ["Tes épaules.", "Elles sont montées jusqu'à tes oreilles, hein ?",
                "Laisse-les redescendre.", "Respire.", RESPIRE, "Voilà.",
                "Juste ça, c'est déjà beaucoup.", "Bonne journée."]),
-    ("aurores", ["Si tu lis ceci, c'est un signe.", "Pas un signe de l'univers…",
+    ("sablier", ["Si tu lis ceci, c'est un signe.", "Pas un signe de l'univers…",
                  "juste un signe que tu peux ralentir.", "Respire.", RESPIRE,
                  "Ta liste peut attendre trente secondes.", "Respire encore.", RESPIRE,
                  "Allez. Bonne journée."]),
-    ("pluie", ["Desserre ta mâchoire.", "Oui, toi.", "Laisse ta langue se poser.",
+    ("ronds", ["Desserre ta mâchoire.", "Oui, toi.", "Laisse ta langue se poser.",
                "Respire.", RESPIRE, "Tu n'as rien à prouver, là, maintenant.",
                "Respire.", RESPIRE, "Bonne journée."]),
-    ("neige", ["Ce que tu ressens en ce moment…", "c'est correct.",
+    ("nuages", ["Ce que tu ressens en ce moment…", "c'est correct.",
                "Ça va passer, comme un nuage.", "Respire.", RESPIRE,
                "Tu n'es pas obligé de tout régler aujourd'hui.", "Respire.", RESPIRE,
                "Bonne journée."]),
-    ("aurores", ["T'en fais beaucoup.", "Je le sais.", "Alors, pour les vingt prochaines secondes…",
+    ("tasse", ["T'en fais beaucoup.", "Je le sais.", "Alors, pour les vingt prochaines secondes…",
                  "tu ne fais rien.", "Respire.", RESPIRE, "Rien d'autre.", "Respire.", RESPIRE,
                  "Bonne journée."]),
 ]
@@ -109,7 +111,6 @@ def calque(W, H, kind, txt, grand=False):
     return Image.alpha_composite(noir, img)
 
 
-poemes.calque = calque          # utilisé par poemes.assembler
 
 
 def construire(phrases):
@@ -163,6 +164,28 @@ def bol_tibetain(duree, coups, dst, f0=196.0):
     sf.write(dst, sortie, sr)
 
 
+def video(scene, ecrans, total, dst, tmp):
+    """Fond animé de la scène + textes en fondu (sans son)."""
+    fond = os.path.join(tmp, "fond.mp4")
+    fonds_pause.rendre(scene, total, fond)
+    entrees, graphe = ["-i", fond], [f"[0:v]fade=t=in:st=0:d=1.5,fade=t=out:st={total - 3}:d=3[b0]"]
+    for i, (a, b, kind, txt) in enumerate(ecrans):
+        a, d = max(a, 0.3), b - max(a, 0.3)
+        png = os.path.join(tmp, f"e{i}.png")
+        calque(1080, 1920, kind, txt).save(png)
+        entrees += ["-loop", "1", "-framerate", "30", "-t", f"{d:.2f}", "-i", png]
+        fi = min(0.8, d / 3)
+        graphe.append(f"[{i + 1}:v]format=rgba,fade=t=in:st=0:d={fi:.2f}:alpha=1,"
+                      f"fade=t=out:st={d - 0.8:.2f}:d=0.8:alpha=1,setpts=PTS+{a:.2f}/TB[t{i}]")
+        graphe.append(f"[b{i}][t{i}]overlay=eof_action=pass:format=auto[b{i + 1}]")
+    graphe.append(f"[b{len(ecrans)}]format=yuv420p[v]")
+    script = os.path.join(tmp, "graphe.txt")
+    open(script, "w").write(";\n".join(graphe))
+    subprocess.run(["ffmpeg", "-v", "error", "-y", *entrees, "-filter_complex_script", script,
+                    "-map", "[v]", "-t", str(total), "-c:v", "libx264", "-preset", "medium",
+                    "-b:v", "2500k", "-maxrate", "3500k", "-bufsize", "6000k", "-r", "30", dst], check=True)
+
+
 def short(k):
     scene, phrases = SCRIPTS[k - 1]
     morceaux, ecrans, coups, t = construire(phrases)
@@ -173,7 +196,7 @@ def short(k):
         piste_voix(morceaux, total, w)
         dst = os.path.join(SORTIE, f"pause-{k}.mp4")
         brut = os.path.join(tmp, "brut.mp4")
-        assembler(scene, ecrans, w, total, brut, tmp, vertical=True, vbit="1800k")
+        video(scene, ecrans, total, brut, tmp)
         fond = os.path.join(tmp, "fond.wav")
         bol_tibetain(total, coups, fond)
         audio = ("[1:a]aresample=48000,highpass=f=70,aecho=0.8:0.6:45|95:0.18|0.10,"
