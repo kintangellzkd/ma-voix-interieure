@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Shorts « Pause » : courts messages pour s'arrêter et respirer, lus avec la voix
-ElevenLabs de l'auteur, sur les ambiances (neige, aurores, pluie). Sans marque.
+ElevenLabs de l'auteur, sur les images d'ambiance (neige, aurores, pluie) et un bol tibétain qui
+résonne (au début, à chaque respiration, à la fin). Sans marque.
 
 Chaque phrase est synthétisée séparément puis posée sur une ligne de temps avec de
 vraies pauses ; pendant « Respire », un guide « inspire… / expire… » s'affiche.
@@ -112,9 +113,11 @@ poemes.calque = calque          # utilisé par poemes.assembler
 
 
 def construire(phrases):
-    morceaux, ecrans, t = [], [], 1.5
+    """Ligne de temps : voix, écrans, et instants des coups de bol (force)."""
+    morceaux, ecrans, coups, t = [], [], [(0.2, 1.0)], 3.2
     for i, p in enumerate(phrases):
         if p == RESPIRE:
+            coups.append((t - 0.1, 0.55))
             ecrans.append((t, t + INSPIRE, "fin", "inspire…"))
             ecrans.append((t + INSPIRE, t + INSPIRE + EXPIRE, "fin", "expire…"))
             t += INSPIRE + EXPIRE + 0.6
@@ -125,13 +128,45 @@ def construire(phrases):
         fin = p.endswith(("…", ".", "?", "!"))
         ecrans.append((t - 0.3, t + d + (1.0 if fin else 0.6), "strophe", p))
         t += d + (P_LONGUE if fin else P_COURTE)
-    return morceaux, ecrans, t
+    coups.append((t - 0.6, 0.9))
+    return morceaux, ecrans, coups, t + 7.0
+
+
+def bol_tibetain(duree, coups, dst, f0=196.0):
+    """Bol tibétain synthétisé : partiels inharmoniques en doublets (battements
+    lents), longue résonance, léger choc du maillet. Rien d'autre."""
+    sr = 48000
+    n = int(duree * sr)
+    t = np.arange(n, dtype=np.float32) / sr
+    rng = np.random.default_rng(5)
+    partiels = ((1.0, 1.0, 9.0, 0.9), (2.71, 0.55, 6.0, 1.6), (5.15, 0.25, 3.5, 2.4),
+                (8.15, 0.10, 2.0, 3.1), (11.7, 0.05, 1.2, 4.0))
+    sortie = np.zeros((n, 2), np.float32)
+    for t0, force in coups:
+        i0 = int(max(t0, 0) * sr)
+        k = t[: n - i0]
+        x = np.zeros((len(k), 2), np.float32)
+        for r, a, tau, bat in partiels:
+            f = f0 * r
+            for c, sgn in enumerate((-1, 1)):
+                ph = rng.uniform(0, 2 * np.pi)
+                # doublet : deux modes proches -> battement « wah-wah » typique du bol
+                v = np.sin(2 * np.pi * (f - bat / 2) * k + ph) + 0.8 * np.sin(2 * np.pi * (f + bat / 2) * k + ph + sgn)
+                x[:, c] += a * v * np.exp(-k / tau)
+        choc = rng.standard_normal(min(len(k), int(0.03 * sr))).astype(np.float32)
+        choc *= np.exp(-np.arange(len(choc)) / (0.004 * sr)) * 0.15
+        x[: len(choc)] += choc[:, None]
+        x *= np.clip(k / 0.003, 0, 1)[:, None]
+        sortie[i0:] += force * x
+    sortie *= 0.32 / (np.abs(sortie).max() + 1e-9)
+    sortie *= np.clip((duree - t) / 2.5, 0, 1)[:, None]
+    sf.write(dst, sortie, sr)
 
 
 def short(k):
     scene, phrases = SCRIPTS[k - 1]
-    morceaux, ecrans, t = construire(phrases)
-    total = round(t + 2.5)
+    morceaux, ecrans, coups, t = construire(phrases)
+    total = round(t)
     tmp = tempfile.mkdtemp(prefix="pause-")
     try:
         w = os.path.join(tmp, "voix.wav")
@@ -139,8 +174,14 @@ def short(k):
         dst = os.path.join(SORTIE, f"pause-{k}.mp4")
         brut = os.path.join(tmp, "brut.mp4")
         assembler(scene, ecrans, w, total, brut, tmp, vertical=True, vbit="1800k")
-        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", brut, "-c:v", "copy",
-                        "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-ar", "48000",
+        fond = os.path.join(tmp, "fond.wav")
+        bol_tibetain(total, coups, fond)
+        audio = ("[1:a]aresample=48000,highpass=f=70,aecho=0.8:0.6:45|95:0.18|0.10,"
+                 "aformat=channel_layouts=stereo[vx];[vx][2:a]amix=inputs=2:normalize=0,"
+                 "loudnorm=I=-16:TP=-1.5:LRA=11[a]")
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", brut, "-i", w, "-i", fond, "-map", "0:v",
+                        "-c:v", "copy", "-filter_complex", audio, "-map", "[a]", "-t", str(total),
+                        "-ar", "48000",
                         "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", dst], check=True)
         print("->", dst, f"{total}s", flush=True)
     finally:
