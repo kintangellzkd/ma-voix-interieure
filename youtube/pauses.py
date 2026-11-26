@@ -58,7 +58,8 @@ SCRIPTS = [
                "[smiling] Bon, tu peux y retourner. Bonne journée !"]),
 ]
 
-P_PHRASE = 0.45
+P_PHRASE = 1.3          # silence entre deux phrases
+TEMPO = 0.88            # voix ralentie (hauteur conservée)
 
 
 def affiche(texte):
@@ -80,7 +81,10 @@ def voix(texte):
         a = np.frombuffer(pcm, np.int16).astype(np.float32) / 32768
         os.makedirs(os.path.dirname(cache), exist_ok=True)
         sf.write(cache, a, SR)
-    a, _ = sf.read(cache, dtype="float32")
+    lent = cache.replace(".wav", f"-t{TEMPO}.wav")
+    if not os.path.exists(lent):
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", cache, "-af", f"atempo={TEMPO}", lent], check=True)
+    a, _ = sf.read(lent, dtype="float32")
     fort = np.where(np.abs(a) > 0.01)[0]
     if len(fort):
         a = a[max(0, fort[0] - 600): fort[-1] + 2400]
@@ -126,7 +130,17 @@ def construire(script):
             t += d
             guide = None
             continue
-        a = voix(p)
+        tags = re.match(r"(\s*\[[^\]]*\]\s*)*", p).group(0).strip()
+        bouts = re.split(r"(?<=[.!?])\s+", affiche(p))      # une phrase à la fois : débit posé
+        if len(bouts) > 1:
+            for k, bout in enumerate(bouts):
+                a = voix(f"[calmly] {tags} {bout}".strip())
+                morceaux.append((t, a))
+                d = len(a) / SR
+                ecrans.append((t - 0.2, t + d + 0.8, "strophe", bout))
+                t += d + P_PHRASE
+            continue
+        a = voix(f"[calmly] {p}")
         morceaux.append((t, a))
         d = len(a) / SR
         txt = affiche(p)
@@ -134,7 +148,7 @@ def construire(script):
             guide = t
         else:
             # pendant une inspiration en cours, la phrase s'affiche par-dessus le cercle
-            ecrans.append((t - 0.2, t + d + 0.5, "strophe", txt))
+            ecrans.append((t - 0.2, t + d + 0.8, "strophe", txt))
         t += d + P_PHRASE
     coups.append((t - 0.3, 0.9))
     return morceaux, ecrans, coups, t + 5.0
