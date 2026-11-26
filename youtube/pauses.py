@@ -38,6 +38,7 @@ SORTIE = os.path.join(poemes.gv.RACINE, "youtube", "sortie", "pauses")
 # respirations ("IN", secondes) / ("OUT", secondes). Une phrase « Respire… » ou
 # « Expire… » juste avant devient le guide de respiration à l'écran.
 IN, OUT = (lambda s=3.0: ("IN", s)), (lambda s=3.5: ("OUT", s))
+PAUSE = lambda s: ("PAUSE", s)          # silence voulu
 SCRIPTS = [
     ("lever", ["[warmly] Hey ! Arrête-toi deux secondes.", "[smiling] Prends ce moment pour toi.",
                "[softly] Respire…", IN(2.0), "[warmly] Ça va aller. Ça va passer. C'est correct.",
@@ -53,12 +54,13 @@ SCRIPTS = [
     ("nuages", ["[warmly] Hey… ce que tu ressens là, c'est correct.", "[softly] Respire…", IN(2.0),
                 "[warmly] Ça va passer, comme un nuage.", "[softly] Expire…", OUT(),
                 "[smiling] Bonne journée !"]),
-    ("tasse", ["[cheerfully] Pause café… sans le café !", "[warmly] Juste toi, deux secondes.",
+    ("tasse", ["[cheerfully] Pause café… sans le café !", PAUSE(1.8), "[warmly] Juste toi, deux secondes.",
                "[softly] Respire…", IN(), "[softly] Expire…", OUT(),
                "[smiling] Bon, tu peux y retourner. Bonne journée !"]),
 ]
 
 P_PHRASE = 1.3          # silence entre deux phrases
+P_AVANT_RESPIRE = 0.8   # silence supplémentaire avant « Respire… »
 TEMPO = 0.88            # voix ralentie (hauteur conservée)
 
 
@@ -121,6 +123,9 @@ def construire(script):
     morceaux, ecrans, coups, t = [], [], [(0.2, 1.0)], 2.2
     guide = None                                   # début du « Respire… » / « Expire… » parlé
     for p in script:
+        if isinstance(p, tuple) and p[0] == "PAUSE":
+            t += p[1]
+            continue
         if isinstance(p, tuple):
             kind, d = p
             debut = guide if guide is not None else t
@@ -144,6 +149,10 @@ def construire(script):
         morceaux.append((t, a))
         d = len(a) / SR
         txt = affiche(p)
+        if txt.lower().rstrip("….") == "respire" and morceaux[:-1]:
+            # un temps avant « Respire… » : on décale cette phrase
+            t += P_AVANT_RESPIRE
+            morceaux[-1] = (t, a)
         if txt.lower().rstrip("….") in ("respire", "expire"):
             guide = t
         else:
